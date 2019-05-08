@@ -9,6 +9,7 @@ class puzzle:
             self.directions.remove(pre_move)
         self.pre_move = pre_move
         self.parent = parent
+        self.cost = 0
 
     def random_init(self):
         for i in range(9):
@@ -29,7 +30,13 @@ class puzzle:
             print("\n")
         print("  ↓\n")
 
-    def generate_substates(self):
+    def cal_cost(self, step):
+        eva = 0
+        for i in range(9):
+            eva += not (self.state[i] == goal[i])
+        self.cost = eva + step
+
+    def generate_substates(self, step, Astar):
         if not self.directions:
             return []
         substates = []
@@ -40,26 +47,34 @@ class puzzle:
             temp = self.state.copy()
             temp[space], temp[space + 3] = temp[space + 3], temp[space]
             new_puz = puzzle(temp, pre_move="up", parent=self)
+            if Astar:
+                new_puz.cal_cost(step)
             substates.append(new_puz)
         if "down" in self.directions and space > 2:
             temp = self.state.copy()
             temp[space], temp[space - 3] = temp[space - 3], temp[space]
             new_puz = puzzle(temp, pre_move="down", parent=self)
+            if Astar:
+                new_puz.cal_cost(step)
             substates.append(new_puz)
         if "left" in self.directions and space % 3 < 2:
             temp = self.state.copy()
             temp[space], temp[space + 1] = temp[space + 1], temp[space]
             new_puz = puzzle(temp, pre_move="left", parent=self)
+            if Astar:
+                new_puz.cal_cost(step)
             substates.append(new_puz)
         if "right" in self.directions and space % 3 > 0:
             temp = self.state.copy()
             temp[space], temp[space - 1] = temp[space - 1], temp[space]
             new_puz = puzzle(temp, pre_move="right", parent=self)
+            if Astar:
+                new_puz.cal_cost(step)
             substates.append(new_puz)
 
         return substates
 
-    def solve(self):
+    def solve(self, Astar):
         open_table = []
         close_table = []
 
@@ -69,7 +84,7 @@ class puzzle:
         while len(open_table) > 0:
             curr = open_table.pop(0)
             close_table.append(curr)
-            substates = curr.generate_substates()
+            substates = curr.generate_substates(steps,Astar)
             path = []
 
             for i in substates:
@@ -80,15 +95,18 @@ class puzzle:
                     path.reverse()
                     return path, steps + 1
             open_table.extend(substates)
+            if Astar: # if Astar algorithm is used, sort the open table with cost
+                open_table = sorted(open_table, key=lambda x:x.cost)
             steps += 1
         else:
             return None, None
 
 
-origin_state = [0, 2, 1, 3, 4, 5, 6, 7, 8]
+origin_state = [2,8,3,1,4,5,7,6,0]
 goal = [1, 2, 3, 8, 0, 4, 7, 6, 5]
 puz = puzzle(state=origin_state)
-path, step = puz.solve()
+puz2 = puzzle(state=origin_state)
+path, step = puz.solve(True)
 if path:
     for n in path:
         n.print()
@@ -98,4 +116,16 @@ if path:
             print(goal[c], end=" ")
             c += 1
         print("\n")
-    print("total steps: %d" % step)
+    print("Astar total steps: %d" % step)
+
+path, step = puz2.solve(False)
+if path:
+    for n in path:
+        n.print()
+    c = 0
+    for i in range(3):
+        for j in range(3):
+            print(goal[c], end=" ")
+            c += 1
+        print("\n")
+    print("BFS total steps: %d" % step)
