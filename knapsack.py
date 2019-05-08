@@ -58,5 +58,7 @@ X=[0, 0, 0]
 rest = 50
 n = len(price) - 1
 
+print("max price in 0/1 knapsack problem:")
 print(knapsack(price, weight, rest, n))
+print("sequence of X in partial knapsack problem:")
 print(findMaxKnapsack(price,weight,rest))
