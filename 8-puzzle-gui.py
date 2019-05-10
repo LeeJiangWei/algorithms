@@ -1,8 +1,18 @@
 # problem part
 import random
 
-origin_state = [2,8,3,1,4,5,7,6,0]
+origin_state = [2, 8, 3, 1, 4, 5, 7, 6, 0]
 goal = [1, 2, 3, 8, 0, 4, 7, 6, 5]
+
+
+def reverse_num(arr):
+    res = 0
+    for i in range(len(arr)):
+        for j in range(0,i):
+            if arr[i] != 0 and arr[j] > arr[i]:
+                res += 1
+    return res
+
 
 class puzzle:
     def __init__(self, state=None, pre_move=None, parent=None):
@@ -15,9 +25,12 @@ class puzzle:
         self.cost = 0
 
     def random_init(self):
+        temp = []
         for i in range(9):
-            self.state.append(i)
-        random.shuffle(self.state)
+            temp.append(i)
+        while reverse_num(temp)%2 != 1:
+            random.shuffle(temp)
+        self.state = temp
 
     def get_space(self):
         for i in range(9):
@@ -79,15 +92,12 @@ class puzzle:
 
     def BFS(self):
         open_table = []
-        close_table = []
-
         open_table.append(self)
         steps = 0
 
         while len(open_table) > 0:
             curr = open_table.pop(0)
-            close_table.append(curr)
-            substates = curr.generate_substates(steps,False)
+            substates = curr.generate_substates(steps, False)
             path = []
 
             for i in substates:
@@ -104,14 +114,11 @@ class puzzle:
 
     def Astar(self):
         open_table = []
-        close_table = []
-
         open_table.append(self)
         steps = 0
 
         while len(open_table) > 0:
             curr = open_table.pop(0)
-            close_table.append(curr)
             substates = curr.generate_substates(steps, True)
             path = []
 
@@ -123,21 +130,21 @@ class puzzle:
                     path.reverse()
                     return path, steps + 1
             open_table.extend(substates)
-            open_table = sorted(open_table, key=lambda x:x.cost)
+            open_table = sorted(open_table, key=lambda x: x.cost)
             steps += 1
         else:
             return None, None
 
-    def solve(self,method="BFS"):
-        if method=="BFS":
+    def solve(self, method="Astar"):
+        if method == "BFS":
             return self.BFS()
-        elif method=="Astar":
+        elif method == "Astar":
             return self.Astar()
 
 
-puz = puzzle(state=origin_state)
-path, step = puz.solve("Astar")
-path.append(puzzle(goal))
+# puz = puzzle(state=origin_state)
+# path, step = puz.solve("Astar")
+# path.append(puzzle(goal))
 
 # GUI part
 import tkinter as tk
@@ -145,36 +152,70 @@ import time
 
 window = tk.Tk()
 window.title("8-puzzle")
-window.geometry('500x300')
-canvas = tk.Canvas()
+window.geometry('400x300')
+window.resizable(width=False, height=False)
+canvas = tk.Canvas(width=400, height=300)
+puz = puzzle()
 
 class block:
     def __init__(self, text, x, y, color):
-        self.rect=canvas.create_rectangle(x,y,x+50,y+50, fill=color)
-        self.text=canvas.create_text(x+25,y+25,text=text)
+        self.rect = canvas.create_rectangle(x, y, x + 50, y + 50, fill=color)
+        self.text = canvas.create_text(x + 25, y + 25, text=text)
+
 
 def paint_board(state):
-    t=0 
+    t = 0
     for i in range(3):
         for j in range(3):
-            if state[t]==0:
-                block("",20+50*j,20+50*i,'white')
+            if state[t] == 0:
+                block("", 50 + 50 * j, 20 + 50 * i, 'white')
             else:
-                block(state[t],20+50*j,20+50*i,'yellow')
-            t+=1
+                block(state[t], 50 + 50 * j, 20 + 50 * i, 'yellow')
+            t += 1
+
 
 def paint_result(paths):
-    button.config(state="disabled")
+    paint_button.config(state="disabled")
     for i in paths:
         paint_board(i.state)
         window.update()
         time.sleep(0.5)
-    button.config(state="normal")
-        
-paint_board(origin_state)
+    paint_button.config(state="normal")
 
-button = tk.Button(text="paint",command=lambda:paint_result(path))
-button.place(x=300,y=20)
+def random_init():
+    puz.random_init()
+    paint_board(puz.state)
+
+def solve(method = "Astar"):
+    puz.solve(method)
+
+paint_board([0,0,0,0,0,0,0,0,0])
+radio = tk.StringVar()
+text = tk.StringVar()
+text.set("Steps: ")
+
+paint_button = tk.Button(text="paint", width=5)#, command=lambda: paint_result(path)
+paint_button.place(x=50, y=200)
+
+run_button = tk.Button(text="run", width=5, command=lambda :solve(radio.get()))
+run_button.place(x=100, y=200)
+
+init_button = tk.Button(text="init", width=5, command=random_init)
+init_button.place(x=150, y=200)
+
+
+def display():
+    text.set("Steps: " + radio.get())
+
+
+step_text = tk.Label(window, textvariable = text).place(x=275, y=120)
+method_text = tk.Label(window, textvariable = radio).place(x=275, y=140)
+
+tk.Radiobutton(window, text="BFS", variable=radio, value='BFS', command=display).place(x=275, y=20)
+tk.Radiobutton(window, text="Astar", variable=radio, value='Astar', command=display).place(x=275, y=40)
+tk.Radiobutton(window, text="Other", variable=radio, value='Other', command=display).place(x=275, y=60)
+
+
 
 canvas.pack()
 window.mainloop()
